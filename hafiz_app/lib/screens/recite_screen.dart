@@ -35,6 +35,8 @@ class _ReciteScreenState extends State<ReciteScreen> {
       _loadingVerses = true;
       _verses = [];
       _verseIndex = 0;
+      _feedback = '';
+      _recitationCtrl.clear();
     });
     final verses = await QuranService.getSurahVerses(_selectedSurah!.number);
     if (mounted) setState(() { _verses = verses; _loadingVerses = false; });
@@ -42,7 +44,12 @@ class _ReciteScreenState extends State<ReciteScreen> {
 
   Future<void> _getFeedback() async {
     if (_verses.isEmpty || _selectedSurah == null) return;
-    if (_recitationCtrl.text.trim().isEmpty) return;
+    if (_recitationCtrl.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tapez votre récitation en arabe ci-dessous')),
+      );
+      return;
+    }
     setState(() { _loadingFeedback = true; _feedback = ''; });
     final verse = _verses[_verseIndex];
     final result = await AICorrectionService.correctRecitation(
@@ -70,9 +77,10 @@ class _ReciteScreenState extends State<ReciteScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('Réciter', style: Theme.of(context).textTheme.headlineMedium),
-            Text('Saisissez votre récitation en arabe pour la correction IA',
+            Text('Lisez le verset, puis tapez votre récitation pour la corriger',
                 style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
+            // Surah selector
             InkWell(
               onTap: _showSurahPicker,
               borderRadius: BorderRadius.circular(12),
@@ -96,125 +104,126 @@ class _ReciteScreenState extends State<ReciteScreen> {
                           style: const TextStyle(
                               color: AppColors.gold, fontSize: 16)),
                     const SizedBox(width: 8),
-                    const Icon(Icons.expand_more,
-                        color: AppColors.textSecondary),
+                    const Icon(Icons.expand_more, color: AppColors.textSecondary),
                   ],
                 ),
               ),
             ),
+            // Verse navigator
             if (_verses.isNotEmpty) ...[const SizedBox(height: 10),
-              Row(
-                children: [
-                  IconButton(
-                    onPressed: _verseIndex > 0
-                        ? () => setState(() {
-                              _verseIndex--;
-                              _recitationCtrl.clear();
-                              _feedback = '';
-                            })
-                        : null,
-                    icon: const Icon(Icons.chevron_left),
-                    color: AppColors.gold,
-                  ),
-                  Expanded(
-                      child: Center(
-                          child: Text('Verset ${_verseIndex + 1} / ${_verses.length}',
-                              style: const TextStyle(
-                                  color: AppColors.textSecondary)))),
-                  IconButton(
-                    onPressed: _verseIndex < _verses.length - 1
-                        ? () => setState(() {
-                              _verseIndex++;
-                              _recitationCtrl.clear();
-                              _feedback = '';
-                            })
-                        : null,
-                    icon: const Icon(Icons.chevron_right),
-                    color: AppColors.gold,
-                  ),
-                ],
-              ),
+              Row(children: [
+                IconButton(
+                  onPressed: _verseIndex > 0
+                      ? () => setState(() { _verseIndex--; _recitationCtrl.clear(); _feedback = ''; })
+                      : null,
+                  icon: const Icon(Icons.chevron_left), color: AppColors.gold,
+                ),
+                Expanded(child: Center(
+                    child: Text('Verset ${_verseIndex + 1} / ${_verses.length}',
+                        style: const TextStyle(color: AppColors.textSecondary)))),
+                IconButton(
+                  onPressed: _verseIndex < _verses.length - 1
+                      ? () => setState(() { _verseIndex++; _recitationCtrl.clear(); _feedback = ''; })
+                      : null,
+                  icon: const Icon(Icons.chevron_right), color: AppColors.gold,
+                ),
+              ]),
             ],
             const SizedBox(height: 12),
+            // Verse display
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                     colors: [AppColors.cardGradient1, AppColors.cardGradient2],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight),
+                    begin: Alignment.topLeft, end: Alignment.bottomRight),
                 borderRadius: BorderRadius.circular(16),
-                border:
-                    Border.all(color: AppColors.gold.withOpacity(0.2)),
+                border: Border.all(color: AppColors.gold.withOpacity(0.2)),
               ),
               child: _loadingVerses
-                  ? const Center(
-                      child: CircularProgressIndicator(color: AppColors.gold))
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
                   : currentVerse == null
                       ? const Text('Sélectionnez une sourate',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: AppColors.textSecondary))
-                      : Column(
-                          children: [
-                            Text(currentVerse.text,
-                                textDirection: TextDirection.rtl,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    fontSize: 24,
-                                    color: AppColors.text,
-                                    height: 1.8)),
-                            const SizedBox(height: 12),
-                            Text(currentVerse.translation,
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary,
-                                    fontStyle: FontStyle.italic)),
-                          ],
-                        ),
+                      : Column(children: [
+                          Text(currentVerse.text,
+                              textDirection: TextDirection.rtl,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontSize: 24, color: AppColors.text, height: 1.8)),
+                          const SizedBox(height: 12),
+                          Text(currentVerse.translation,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  fontStyle: FontStyle.italic)),
+                        ]),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
+            // Step indicator
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: const Row(children: [
+                Icon(Icons.info_outline, color: AppColors.primary, size: 16),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Étape : lisez le verset ci-dessus, puis tapez-le en arabe ci-dessous pour le corriger.',
+                    style: TextStyle(color: AppColors.primary, fontSize: 12),
+                  ),
+                ),
+              ]),
+            ),
+            const SizedBox(height: 12),
+            // Text input
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.circular(12)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Votre récitation (tapez en arabe) :',
-                      style: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 12)),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _recitationCtrl,
-                    textDirection: TextDirection.rtl,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(
-                        color: AppColors.text, fontSize: 18, height: 1.6),
-                    decoration: const InputDecoration(
-                      hintText: 'اكتب الآية هنا...',
-                      hintStyle: TextStyle(
-                          color: AppColors.textSecondary, fontSize: 16),
-                      border: InputBorder.none,
-                    ),
-                    maxLines: 4,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.surfaceVariant)),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                const Row(children: [
+                  Icon(Icons.edit, color: AppColors.gold, size: 14),
+                  SizedBox(width: 6),
+                  Text('Tapez votre récitation en arabe :',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                ]),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _recitationCtrl,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                      color: AppColors.text, fontSize: 20, height: 1.8),
+                  decoration: const InputDecoration(
+                    hintText: 'اكتب الآية هنا...',
+                    hintStyle:
+                        TextStyle(color: AppColors.textSecondary, fontSize: 18),
+                    border: InputBorder.none,
                   ),
-                ],
-              ),
+                  maxLines: 4,
+                ),
+              ]),
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
               onPressed: _loadingFeedback ? null : _getFeedback,
               icon: const Icon(Icons.auto_awesome),
-              label: const Text('Corriger avec l\'IA'),
+              label: const Text('Obtenir la correction IA'),
             ),
             if (_loadingFeedback) ...[const SizedBox(height: 16),
-              const Center(
-                  child: CircularProgressIndicator(color: AppColors.gold)),
+              const Center(child: CircularProgressIndicator(color: AppColors.gold)),
               const SizedBox(height: 8),
               const Center(
-                  child: Text('Analyse en cours...',
+                  child: Text('Analyse de votre récitation...',
                       style: TextStyle(color: AppColors.textSecondary))),
             ],
             if (_feedback.isNotEmpty && !_loadingFeedback) ...[const SizedBox(height: 16),
@@ -228,24 +237,20 @@ class _ReciteScreenState extends State<ReciteScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: AppColors.gold.withOpacity(0.3)),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(children: [
-                      Icon(Icons.auto_awesome, color: AppColors.gold, size: 16),
-                      SizedBox(width: 6),
-                      Text('Correction IA',
-                          style: TextStyle(
-                              color: AppColors.gold,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 13)),
-                    ]),
-                    const SizedBox(height: 10),
-                    Text(_feedback,
-                        style: const TextStyle(
-                            color: AppColors.text, height: 1.6)),
-                  ],
-                ),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  const Row(children: [
+                    Icon(Icons.auto_awesome, color: AppColors.gold, size: 16),
+                    SizedBox(width: 6),
+                    Text('Correction IA',
+                        style: TextStyle(
+                            color: AppColors.gold,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13)),
+                  ]),
+                  const SizedBox(height: 10),
+                  Text(_feedback,
+                      style: const TextStyle(color: AppColors.text, height: 1.6)),
+                ]),
               ),
             ],
             const SizedBox(height: 20),

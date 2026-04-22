@@ -3,12 +3,14 @@ import 'package:http/http.dart' as http;
 
 class QuranVerse {
   final int number;
+  final int absoluteNumber;
   final String text;
   final String translation;
   final String audioUrl;
 
   const QuranVerse({
     required this.number,
+    required this.absoluteNumber,
     required this.text,
     required this.translation,
     required this.audioUrl,
@@ -36,11 +38,13 @@ class QuranService {
             jsonDecode(responses[1].body)['data']['ayahs'] as List;
         final verses = List.generate(arabicData.length, (i) {
           final verseNum = arabicData[i]['numberInSurah'] as int;
+          final absoluteNum = arabicData[i]['number'] as int;
           return QuranVerse(
             number: verseNum,
+            absoluteNumber: absoluteNum,
             text: arabicData[i]['text'],
             translation: frenchData[i]['text'],
-            audioUrl: '$_audioBase/$surahNumber/$verseNum.mp3',
+            audioUrl: '$_audioBase/$absoluteNum.mp3',
           );
         });
         _cache[surahNumber] = verses;
