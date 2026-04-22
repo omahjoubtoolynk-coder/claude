@@ -103,7 +103,7 @@ class _DashboardView extends StatelessWidget {
                   const SizedBox(height: 12),
                   _ContinueSection(provider: provider),
                   const SizedBox(height: 20),
-                  _QuoteCard(),
+                  const _QuoteCard(),
                   const SizedBox(height: 20),
                 ],
               ),
@@ -120,21 +120,23 @@ class _StreakBadge extends StatelessWidget {
   const _StreakBadge({required this.streak});
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-    decoration: BoxDecoration(
-      gradient: const LinearGradient(colors: [Color(0xFF7B4F00), Color(0xFFFFD700)]),
-      borderRadius: BorderRadius.circular(20),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('🔥', style: TextStyle(fontSize: 16)),
-        const SizedBox(width: 4),
-        Text('$streak jour${streak > 1 ? "s" : ""}',
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(colors: [Color(0xFF7B4F00), Color(0xFFFFD700)]),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🔥', style: TextStyle(fontSize: 16)),
+            const SizedBox(width: 4),
+            Text(
+              '$streak jour${streak > 1 ? "s" : ""}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ],
+        ),
+      );
 }
 
 class _DailyCard extends StatelessWidget {
@@ -148,24 +150,38 @@ class _DailyCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.cardGradient1, AppColors.cardGradient2], begin: Alignment.topLeft, end: Alignment.bottomRight),
+        gradient: const LinearGradient(
+          colors: [AppColors.cardGradient1, AppColors.cardGradient2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 86, height: 86,
+            width: 86,
+            height: 86,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
-                  value: rate, strokeWidth: 7,
+                  value: rate,
+                  strokeWidth: 7,
                   backgroundColor: AppColors.surface,
-                  valueColor: AlwaysStoppedAnimation(rate == 1 ? AppColors.gold : AppColors.primary),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    rate == 1 ? AppColors.gold : AppColors.primary,
+                  ),
                 ),
-                Text('${(rate * 100).round()}%',
-                    style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.bold, fontSize: 17)),
+                Text(
+                  '${(rate * 100).round()}%',
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
+                ),
               ],
             ),
           ),
@@ -178,10 +194,14 @@ class _DailyCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text('$done/$total objectifs complétés', style: Theme.of(context).textTheme.bodyMedium),
                 const SizedBox(height: 6),
-                Text('${provider.todayVersesLearned} versets appris aujourd\'hui',
-                    style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w500, fontSize: 13)),
-                Text('Total : ${provider.totalVersesLearned} versets mémorisés',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                Text(
+                  '${provider.todayVersesLearned} versets appris aujourd\'hui',
+                  style: const TextStyle(color: AppColors.gold, fontWeight: FontWeight.w500, fontSize: 13),
+                ),
+                Text(
+                  'Total : ${provider.totalVersesLearned} versets mémorisés',
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                ),
               ],
             ),
           ),
@@ -194,53 +214,73 @@ class _DailyCard extends StatelessWidget {
 class _ObjectiveTile extends StatelessWidget {
   final DailyObjective objective;
   const _ObjectiveTile({required this.objective});
+
+  String get _icon {
+    switch (objective.type) {
+      case ObjectiveType.learning: return '📚';
+      case ObjectiveType.revision: return '🔄';
+      case ObjectiveType.listening: return '🎧';
+      case ObjectiveType.recitation: return '🎤';
+    }
+  }
+
+  Color get _color {
+    switch (objective.type) {
+      case ObjectiveType.learning: return AppColors.primary;
+      case ObjectiveType.revision: return AppColors.warning;
+      case ObjectiveType.listening: return Colors.blue;
+      case ObjectiveType.recitation: return Colors.purple;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final config = {
-      ObjectiveType.learning: ('📚', AppColors.primary),
-      ObjectiveType.revision: ('🔄', AppColors.warning),
-      ObjectiveType.listening: ('🎧', Colors.blue),
-      ObjectiveType.recitation: ('🎤', Colors.purple),
-    };
-    final (icon, color) = config[objective.type]!;
+    final color = _color;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: objective.isCompleted ? AppColors.success.withOpacity(0.4) : Colors.transparent),
+        border: Border.all(
+          color: objective.isCompleted ? AppColors.success.withOpacity(0.4) : Colors.transparent,
+        ),
       ),
       child: Row(
         children: [
-          Text(icon, style: const TextStyle(fontSize: 22)),
+          Text(_icon, style: const TextStyle(fontSize: 22)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(objective.title,
-                    style: TextStyle(
-                      color: objective.isCompleted ? AppColors.textSecondary : AppColors.text,
-                      fontWeight: FontWeight.w500,
-                      decoration: objective.isCompleted ? TextDecoration.lineThrough : null,
-                      fontSize: 13,
-                    )),
+                Text(
+                  objective.title,
+                  style: TextStyle(
+                    color: objective.isCompleted ? AppColors.textSecondary : AppColors.text,
+                    fontWeight: FontWeight.w500,
+                    decoration: objective.isCompleted ? TextDecoration.lineThrough : null,
+                    fontSize: 13,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(3),
                   child: LinearProgressIndicator(
-                    value: objective.progress, minHeight: 5,
+                    value: objective.progress,
+                    minHeight: 5,
                     backgroundColor: AppColors.background,
-                    valueColor: AlwaysStoppedAnimation(color as Color),
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          Text('${objective.completed}/${objective.target}',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          Text(
+            '${objective.completed}/${objective.target}',
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+          ),
           if (objective.isCompleted) ...[const SizedBox(width: 6), const Icon(Icons.check_circle, color: AppColors.success, size: 18)],
         ],
       ),
@@ -292,18 +332,29 @@ class _ContinueSection extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.2)),
-                  child: Center(child: Text('${surah.number}', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13))),
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.primary.withOpacity(0.2),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '${surah.number}',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ),
                 ),
                 const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(surah.nameTranslit, style: Theme.of(context).textTheme.titleMedium),
-                    Text('${p.versesLearned}/${surah.verseCount} versets', style: Theme.of(context).textTheme.bodyMedium),
-                  ],
-                )),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(surah.nameTranslit, style: Theme.of(context).textTheme.titleMedium),
+                      Text('${p.versesLearned}/${surah.verseCount} versets', style: Theme.of(context).textTheme.bodyMedium),
+                    ],
+                  ),
+                ),
                 Text(surah.nameArabic, style: const TextStyle(fontSize: 18, color: AppColors.gold)),
               ],
             ),
@@ -318,21 +369,35 @@ class _QuoteCard extends StatelessWidget {
   const _QuoteCard();
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(20),
-    decoration: BoxDecoration(
-      gradient: LinearGradient(colors: [AppColors.gold.withOpacity(0.12), AppColors.gold.withOpacity(0.04)],
-          begin: Alignment.topLeft, end: Alignment.bottomRight),
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.gold.withOpacity(0.3)),
-    ),
-    child: Column(
-      children: [
-        const Text('وَرَتِّلِ القُرآنَ تَرتِيلاً',
-            style: TextStyle(fontSize: 20, color: AppColors.gold, height: 2), textAlign: TextAlign.center, textDirection: TextDirection.rtl),
-        const SizedBox(height: 8),
-        Text('« Récite le Coran lentement et distinctement »', style: Theme.of(context).textTheme.bodyMedium, textAlign: TextAlign.center),
-        const Text('Sourate Al-Muzzammil (73:4)', style: TextStyle(color: AppColors.gold, fontSize: 11)),
-      ],
-    ),
-  );
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.gold.withOpacity(0.12), AppColors.gold.withOpacity(0.04)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+        ),
+        child: Column(
+          children: [
+            const Text(
+              'وَرَتِّلِ القُرآنَ تَرتِيلاً',
+              style: TextStyle(fontSize: 20, color: AppColors.gold, height: 2),
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '« Récite le Coran lentement et distinctement »',
+              style: Theme.of(context).textTheme.bodyMedium,
+              textAlign: TextAlign.center,
+            ),
+            const Text(
+              'Sourate Al-Muzzammil (73:4)',
+              style: TextStyle(color: AppColors.gold, fontSize: 11),
+            ),
+          ],
+        ),
+      );
 }

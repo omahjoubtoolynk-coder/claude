@@ -29,13 +29,20 @@ class _ProgressScreenState extends State<ProgressScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<AppProvider>();
-    final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    final maxVal = _weeklyStats.isEmpty ? 1.0
-        : _weeklyStats.map((s) => (s['verses'] as int).toDouble()).reduce((a, b) => a > b ? a : b).clamp(1.0, double.infinity);
+    const days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    final maxVal = _weeklyStats.isEmpty
+        ? 1.0
+        : _weeklyStats
+            .map((s) => (s['verses'] as int).toDouble())
+            .reduce((a, b) => a > b ? a : b)
+            .clamp(1.0, double.infinity);
 
     final surahsStarted = provider.progressList.where((p) => p.versesLearned > 0).length;
     final surahsCompleted = provider.progressList.where((p) {
-      final surah = allSurahs.firstWhere((s) => s.number == p.surahNumber, orElse: () => allSurahs.first);
+      final surah = allSurahs.firstWhere(
+        (s) => s.number == p.surahNumber,
+        orElse: () => allSurahs.first,
+      );
       return p.versesLearned >= surah.verseCount;
     }).length;
 
@@ -48,7 +55,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Text('Mes Progrès', style: Theme.of(context).textTheme.headlineMedium),
             Text('Votre parcours d\'apprentissage', style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 20),
-            // Stats cards
             Row(
               children: [
                 _StatCard(value: '${provider.totalVersesLearned}', label: 'Versets appris', icon: '📚', color: AppColors.primary),
@@ -70,50 +76,58 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Container(
               height: 200,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16)),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: _weeklyStats.isEmpty
                   ? const Center(child: CircularProgressIndicator(color: AppColors.gold))
                   : BarChart(
                       BarChartData(
                         gridData: FlGridData(
                           show: true,
-                          getDrawingHorizontalLine: (_) => FlLine(color: AppColors.surfaceVariant, strokeWidth: 1),
                           drawVerticalLine: false,
+                          getDrawingHorizontalLine: (value) => const FlLine(
+                            color: AppColors.surfaceVariant,
+                            strokeWidth: 1,
+                          ),
                         ),
                         borderData: FlBorderData(show: false),
                         titlesData: FlTitlesData(
-                          bottomTitles: AxisTitles(sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (v, _) {
-                              final idx = v.toInt();
-                              if (idx < 0 || idx >= _weeklyStats.length) return const SizedBox();
-                              final wd = _weeklyStats[idx]['weekday'] as int;
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(days[(wd - 1) % 7],
-                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
-                              );
-                            },
-                          )),
-                          leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                final idx = value.toInt();
+                                if (idx < 0 || idx >= _weeklyStats.length) return const SizedBox();
+                                final wd = _weeklyStats[idx]['weekday'] as int;
+                                return Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    days[(wd - 1) % 7],
+                                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         ),
                         barGroups: List.generate(_weeklyStats.length, (i) {
                           final val = (_weeklyStats[i]['verses'] as int).toDouble();
-                          return BarChartGroupData(x: i, barRods: [
-                            BarChartRodData(
-                              toY: val,
-                              width: 18,
-                              borderRadius: BorderRadius.circular(4),
-                              gradient: LinearGradient(
-                                colors: val > 0
-                                    ? [AppColors.primary, AppColors.primaryDark]
-                                    : [AppColors.surfaceVariant, AppColors.surfaceVariant],
-                                begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                          return BarChartGroupData(
+                            x: i,
+                            barRods: [
+                              BarChartRodData(
+                                toY: val,
+                                width: 18,
+                                borderRadius: BorderRadius.circular(4),
+                                color: val > 0 ? AppColors.primary : AppColors.surfaceVariant,
                               ),
-                            ),
-                          ]);
+                            ],
+                          );
                         }),
                         maxY: maxVal * 1.3,
                       ),
@@ -123,19 +137,37 @@ class _ProgressScreenState extends State<ProgressScreen> {
             Text('Sourates en cours', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
             ...provider.progressList.where((p) => p.versesLearned > 0).map((p) {
-              final surah = allSurahs.firstWhere((s) => s.number == p.surahNumber, orElse: () => allSurahs.first);
+              final surah = allSurahs.firstWhere(
+                (s) => s.number == p.surahNumber,
+                orElse: () => allSurahs.first,
+              );
               final pct = p.versesLearned / surah.verseCount;
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Row(
                   children: [
                     Container(
-                      width: 38, height: 38,
-                      decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.primary.withOpacity(0.2)),
-                      child: Center(child: Text('${surah.number}',
-                          style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12))),
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.primary.withOpacity(0.2),
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${surah.number}',
+                          style: const TextStyle(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -145,17 +177,26 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(surah.nameTranslit, style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w500)),
-                              Text('${p.versesLearned}/${surah.verseCount}',
-                                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                              Text(
+                                surah.nameTranslit,
+                                style: const TextStyle(color: AppColors.text, fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                '${p.versesLearned}/${surah.verseCount}',
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                              ),
                             ],
                           ),
                           const SizedBox(height: 6),
-                          ClipRRect(borderRadius: BorderRadius.circular(3),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
                             child: LinearProgressIndicator(
-                              value: pct, minHeight: 6,
+                              value: pct,
+                              minHeight: 6,
                               backgroundColor: AppColors.background,
-                              valueColor: AlwaysStoppedAnimation(pct == 1 ? AppColors.gold : AppColors.primary),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                pct == 1 ? AppColors.gold : AppColors.primary,
+                              ),
                             ),
                           ),
                         ],
@@ -164,19 +205,24 @@ class _ProgressScreenState extends State<ProgressScreen> {
                   ],
                 ),
               );
-            }).toList(),
+            }),
             if (provider.progressList.isEmpty)
-              Center(child: Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    const Text('📊', style: TextStyle(fontSize: 48)),
-                    const SizedBox(height: 16),
-                    Text('Commencez à apprendre pour voir votre progression ici',
-                        textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium),
-                  ],
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      const Text('📊', style: TextStyle(fontSize: 48)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Commencez à apprendre pour voir votre progression ici',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
                 ),
-              )),
+              ),
             const SizedBox(height: 20),
           ],
         ),
@@ -186,26 +232,34 @@ class _ProgressScreenState extends State<ProgressScreen> {
 }
 
 class _StatCard extends StatelessWidget {
-  final String value, label, icon;
+  final String value;
+  final String label;
+  final String icon;
   final Color color;
-  const _StatCard({required this.value, required this.label, required this.icon, required this.color});
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.icon,
+    required this.color,
+  });
   @override
   Widget build(BuildContext context) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surface, borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(icon, style: const TextStyle(fontSize: 24)),
-          const SizedBox(height: 8),
-          Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
-          Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-        ],
-      ),
-    ),
-  );
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(icon, style: const TextStyle(fontSize: 24)),
+              const SizedBox(height: 8),
+              Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color)),
+              Text(label, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            ],
+          ),
+        ),
+      );
 }
