@@ -1,0 +1,56 @@
+name: Build Hafiz APK
+
+on:
+  push:
+    branches: [ 'claude/*', main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.22.0'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        working-directory: hafiz_app
+        run: flutter pub get
+
+      - name: Analyze
+        working-directory: hafiz_app
+        run: flutter analyze --no-fatal-infos
+        continue-on-error: true
+
+      - name: Build APK
+        working-directory: hafiz_app
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          flutter build apk --release \
+            --dart-define=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: hafiz-release-apk
+          path: hafiz_app/build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 30
+
+      - name: Build info
+        run: |
+          echo "APK build successful!"
+          echo "Download the APK from the Actions artifacts above."
