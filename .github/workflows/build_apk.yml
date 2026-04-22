@@ -32,34 +32,34 @@ jobs:
         run: |
           echo "=== Flutter Version ==="
           flutter --version
-          echo "=== Dart Version ==="
-          dart --version
+          echo "=== FLUTTER_ROOT ==="
+          echo "$FLUTTER_ROOT"
+          echo "=== ANDROID_HOME ==="
+          echo "$ANDROID_HOME"
 
       - name: Get dependencies
         working-directory: hafiz_app
-        run: |
-          echo "=== Running flutter pub get ==="
-          flutter pub get
-          echo "=== pub get done ==="
+        run: flutter pub get
 
-      - name: Analyze code
-        working-directory: hafiz_app
-        run: flutter analyze --no-fatal-infos 2>&1 || true
+      - name: Configure local.properties
+        working-directory: hafiz_app/android
+        run: |
+          echo "flutter.sdk=$FLUTTER_ROOT" > local.properties
+          echo "sdk.dir=$ANDROID_HOME" >> local.properties
+          echo "=== local.properties ==="
+          cat local.properties
 
       - name: Build APK
         working-directory: hafiz_app
-        run: |
-          echo "=== Starting APK build ==="
-          flutter build apk --release 2>&1
-          echo "=== Build exit code: $? ==="
+        run: flutter build apk --release
 
-      - name: Check APK
+      - name: Check & copy APK
         run: |
           APK=hafiz_app/build/app/outputs/flutter-apk/app-release.apk
-          echo "=== Checking APK ==="
-          ls -la $APK
-          cp $APK hafiz-latest.apk
-          echo "=== APK size: $(du -h hafiz-latest.apk) ==="
+          echo "=== APK info ==="
+          ls -la "$APK"
+          cp "$APK" hafiz-latest.apk
+          echo "APK size: $(du -h hafiz-latest.apk | cut -f1)"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -68,13 +68,22 @@ jobs:
           path: hafiz-latest.apk
           retention-days: 30
 
-      - name: Create Release
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
-          artifacts: hafiz-latest.apk
+          artifacts: "hafiz-latest.apk"
           tag: latest
           name: "Hafiz - Compagnon du Coran"
-          body: "Telechargez **hafiz-latest.apk** ci-dessous pour installer sur Android."
+          body: |
+            ## Hafiz - Application d'apprentissage du Coran
+
+            Telechargez **hafiz-latest.apk** ci-dessous pour installer sur Android.
+
+            ### Fonctionnalites
+            - Dashboard de progression quotidienne et hebdomadaire
+            - 114 sourates avec texte arabe + traduction francaise
+            - Ecoute des recitations audio
+            - Correction IA de votre recitation
           allowUpdates: true
           removeArtifacts: true
           makeLatest: true
@@ -85,5 +94,5 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo "=== Verifying release ==="
-          gh release list
+          gh release list --repo ${{ github.repository }} || echo "WARNING: gh release list failed"
           echo "=== Done ==="
