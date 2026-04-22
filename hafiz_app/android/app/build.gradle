@@ -31,7 +31,7 @@ android {
 
     defaultConfig {
         applicationId "com.hafiz.app"
-        minSdk flutter.minSdkVersion
+        minSdk 26
         targetSdk flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
