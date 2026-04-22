@@ -25,18 +25,15 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
           channel: 'stable'
           cache: true
+
+      - name: Flutter version
+        run: flutter --version
 
       - name: Get dependencies
         working-directory: hafiz_app
         run: flutter pub get
-
-      - name: Analyze
-        working-directory: hafiz_app
-        run: flutter analyze --no-fatal-infos
-        continue-on-error: true
 
       - name: Build APK
         working-directory: hafiz_app
@@ -47,43 +44,32 @@ jobs:
             --dart-define=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 
       - name: Rename APK
-        run: |
-          cp hafiz_app/build/app/outputs/flutter-apk/app-release.apk hafiz-latest.apk
+        run: cp hafiz_app/build/app/outputs/flutter-apk/app-release.apk hafiz-latest.apk
 
-      - name: Delete existing release
+      - name: Delete existing latest tag
         run: |
-          gh release delete latest --yes || true
-          git push origin :refs/tags/latest || true
+          gh release delete latest --yes 2>/dev/null || true
+          git push origin :refs/tags/latest 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create public release
-        uses: softprops/action-gh-release@v2
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
           name: "Hafiz App - Derniere version"
           body: |
             ## Hafiz - Compagnon d'apprentissage du Coran
 
-            ### Telecharger l'APK
-            Cliquez sur **hafiz-latest.apk** ci-dessous.
+            Cliquez sur **hafiz-latest.apk** pour telecharger.
 
-            ### Fonctionnalites
-            - Dashboard de progression quotidienne et hebdomadaire
-            - 114 sourates avec texte arabe + traduction francaise
-            - Lecture audio (recitateur Al-Afasy)
-            - Enregistrement vocal + correction IA
-            - Objectifs quotidiens personnalises
-            - Suivi de progression avec graphiques
-
-            ### Installation
+            **Installation Android :**
             1. Telechargez hafiz-latest.apk
-            2. Sur Android : Parametres > Securite > Sources inconnues
-            3. Ouvrez le fichier APK pour installer
+            2. Parametres > Securite > Autoriser sources inconnues
+            3. Ouvrez le fichier pour installer
 
             Build: ${{ github.sha }}
           files: hafiz-latest.apk
           make_latest: true
-          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
