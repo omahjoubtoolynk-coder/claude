@@ -5,9 +5,12 @@ on:
     branches: [ 'claude/*', main ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: Build APK
+    name: Build & Release APK
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -41,16 +44,46 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           flutter build apk --release \
-            --dart-define=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+            --dart-define=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
 
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: hafiz-release-apk
-          path: hafiz_app/build/app/outputs/flutter-apk/app-release.apk
-          retention-days: 30
-
-      - name: Build info
+      - name: Rename APK
         run: |
-          echo "APK build successful!"
-          echo "Download the APK from the Actions artifacts above."
+          cp hafiz_app/build/app/outputs/flutter-apk/app-release.apk hafiz-latest.apk
+
+      - name: Delete existing release
+        run: |
+          gh release delete latest --yes || true
+          git push origin :refs/tags/latest || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create public release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Hafiz App - Derniere version"
+          body: |
+            ## Hafiz - Compagnon d'apprentissage du Coran
+
+            ### Telecharger l'APK
+            Cliquez sur **hafiz-latest.apk** ci-dessous.
+
+            ### Fonctionnalites
+            - Dashboard de progression quotidienne et hebdomadaire
+            - 114 sourates avec texte arabe + traduction francaise
+            - Lecture audio (recitateur Al-Afasy)
+            - Enregistrement vocal + correction IA
+            - Objectifs quotidiens personnalises
+            - Suivi de progression avec graphiques
+
+            ### Installation
+            1. Telechargez hafiz-latest.apk
+            2. Sur Android : Parametres > Securite > Sources inconnues
+            3. Ouvrez le fichier APK pour installer
+
+            Build: ${{ github.sha }}
+          files: hafiz-latest.apk
+          make_latest: true
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
