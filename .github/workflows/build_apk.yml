@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -30,9 +28,6 @@ jobs:
           channel: 'stable'
           cache: true
 
-      - name: Flutter version info
-        run: flutter --version
-
       - name: Get dependencies
         working-directory: hafiz_app
         run: flutter pub get
@@ -44,42 +39,22 @@ jobs:
         run: |
           flutter build apk --release \
             --dart-define=ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-          echo "BUILD_OK=true" >> $GITHUB_ENV
 
-      - name: Check APK exists
-        run: |
-          APK_PATH="hafiz_app/build/app/outputs/flutter-apk/app-release.apk"
-          if [ -f "$APK_PATH" ]; then
-            echo "APK found: $(du -h $APK_PATH)"
-            cp "$APK_PATH" hafiz-latest.apk
-          else
-            echo "ERROR: APK not found at $APK_PATH"
-            exit 1
-          fi
+      - name: Prepare APK
+        run: cp hafiz_app/build/app/outputs/flutter-apk/app-release.apk hafiz-latest.apk
 
-      - name: Upload APK as artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: hafiz-apk
           path: hafiz-latest.apk
           retention-days: 30
 
-      - name: Publish GitHub Release
+      - name: Publish Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release delete latest --yes 2>/dev/null || true
-          git tag -f latest
-          git push origin latest --force
           gh release create latest hafiz-latest.apk \
-            --title "Hafiz App - Derniere version" \
-            --notes "## Hafiz - Compagnon d'apprentissage du Coran
-
-**Telechargez hafiz-latest.apk** ci-dessous pour installer l'app.
-
-### Installation
-1. Telechargez hafiz-latest.apk
-2. Android : Parametres > Securite > Sources inconnues > Autoriser
-3. Ouvrez le fichier APK
-
-Build: ${{ github.sha }}"
+            --title "Hafiz - Compagnon du Coran" \
+            --notes "Telechargez hafiz-latest.apk ci-dessous pour installer sur Android. Installation: Parametres > Securite > Sources inconnues, puis ouvrez le fichier APK."
